@@ -24,6 +24,14 @@
 #define D4 100
 #define D5 516
 
+// Set to 1 if you want the runtime to be printed to consol, 0 if not.
+#define print_runtime 1 
+// When set to 1, the following setting will cause the program to output pgm files aside from the regular pgm output file
+// These additional files will include pgm files that contain the red, green, and blue values of the input file,
+// as well as the Cr, Cb, and Y pgm that are calculated from the RGB data. Enabling this option will give more
+// outputs, but will decrease runtime. If this option is disabled, only the output file will be produced.
+#define return_all_output_files 0
+
 void optimized_RGB_to_YCC(
     const uint8_t R[IMAGE_ROW_SIZE][IMAGE_COL_SIZE],
     const uint8_t G[IMAGE_ROW_SIZE][IMAGE_COL_SIZE],
