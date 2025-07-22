@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-#define IMAGE_ROW_SIZE 64
-#define IMAGE_COL_SIZE 48
+#define IMAGE_ROW_SIZE 480
+#define IMAGE_COL_SIZE 500
 
 #define K 8 // fixed-point bit shift
 #define C11  66
@@ -30,7 +30,7 @@
 // These additional files will include pgm files that contain the red, green, and blue values of the input file,
 // as well as the Cr, Cb, and Y pgm that are calculated from the RGB data. Enabling this option will give more
 // outputs, but will decrease runtime. If this option is disabled, only the output file will be produced.
-#define return_all_output_files 0
+#define return_all_output_files 1
 
 void optimized_RGB_to_YCC(
     const uint8_t R[IMAGE_ROW_SIZE][IMAGE_COL_SIZE],

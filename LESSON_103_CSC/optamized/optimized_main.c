@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Failed to open output_R.pgm\n");
             return 1;
         }
-        fprintf(f_R, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE, IMAGE_COL_SIZE);
+        fprintf(f_R, "P2\n%d %d\n255\n", IMAGE_COL_SIZE, IMAGE_ROW_SIZE);
         for (int row = 0; row < IMAGE_ROW_SIZE; row++) {
             for (int col = 0; col < IMAGE_COL_SIZE; col++) {
                 fprintf(f_R, "%3d ", R[row][col]);
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Failed to open output_G.pgm\n");
             return 1;
         }
-        fprintf(f_G, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE, IMAGE_COL_SIZE);
+        fprintf(f_G, "P2\n%d %d\n255\n", IMAGE_COL_SIZE, IMAGE_ROW_SIZE);
         for (int row = 0; row < IMAGE_ROW_SIZE; row++) {
             for (int col = 0; col < IMAGE_COL_SIZE; col++) {
                 fprintf(f_G, "%3d ", G[row][col]);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Failed to open output_B.pgm\n");
             return 1;
         }
-        fprintf(f_B, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE, IMAGE_COL_SIZE);
+        fprintf(f_B, "P2\n%d %d\n255\n", IMAGE_COL_SIZE, IMAGE_ROW_SIZE);
         for (int row = 0; row < IMAGE_ROW_SIZE; row++) {
             for (int col = 0; col < IMAGE_COL_SIZE; col++) {
                 fprintf(f_B, "%3d ", B[row][col]);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Failed to write output_Y.pgm\n");
             return 1;
         }
-        fprintf(f_Y, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE, IMAGE_COL_SIZE);
+        fprintf(f_Y, "P2\n%d %d\n255\n", IMAGE_COL_SIZE, IMAGE_ROW_SIZE);
         for (int row = 0; row < IMAGE_ROW_SIZE; row++) {
             for (int col = 0; col < IMAGE_COL_SIZE; col++) {
                 fprintf(f_Y, "%3d ", Y[row][col]);
@@ -124,8 +124,8 @@ int main(int argc, char *argv[]) {
         }
 
 
-        fprintf(f_Cb, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE >> 1, IMAGE_COL_SIZE >> 1);
-        fprintf(f_Cr, "P2\n%d %d\n255\n", IMAGE_ROW_SIZE >> 1, IMAGE_COL_SIZE >> 1);
+        fprintf(f_Cb, "P2\n%d %d\n255\n", IMAGE_COL_SIZE >> 1, IMAGE_ROW_SIZE >> 1);
+        fprintf(f_Cr, "P2\n%d %d\n255\n", IMAGE_COL_SIZE >> 1, IMAGE_ROW_SIZE >> 1);
 
         for (int row = 0; row < (IMAGE_ROW_SIZE >> 1); row++) {
             for (int col = 0; col < (IMAGE_COL_SIZE >> 1); col++) {
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to open output_RGB.pgm\n");
         return 1;
     }
-    fprintf(f_output, "P3\n%d %d\n255\n", IMAGE_ROW_SIZE, IMAGE_COL_SIZE);
+    fprintf(f_output, "P3\n%d %d\n255\n", IMAGE_COL_SIZE, IMAGE_ROW_SIZE);
     for (int row = 0; row < IMAGE_ROW_SIZE; row++) {
         for (int col = 0; col < IMAGE_COL_SIZE; col++) {
             fprintf(f_output, "%3d %3d %3d  ", R[row][col], G[row][col], B[row][col]);

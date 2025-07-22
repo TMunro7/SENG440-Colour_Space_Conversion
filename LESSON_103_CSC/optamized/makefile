@@ -25,4 +25,4 @@ convert:
 
 # Clean up all build outputs
 clean:
-	rm -f $(BIN) *.s *.png
+	rm -f $(BIN) *.s *.png *.pgm
