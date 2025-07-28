@@ -11,7 +11,7 @@ BIN = CSC.out
 all: $(BIN)
 
 $(BIN): $(SRC)
-	$(CC) -o $(BIN) $(SRC)
+	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -o CSC.out optimized_main.c optimized_RGB_to_YCC.c optimized_YCC_to_RGB.c
 
 # Generate assembly files
 asm:
