@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <time.h>
 #include "optimized_global.h"
 
 int main(int argc, char *argv[]) {
-
-    clock_t start_time = clock();
 
     if (argc < 2) {
         // If no input file is specified print this message
@@ -153,12 +150,6 @@ int main(int argc, char *argv[]) {
         fprintf(f_output, "\n");
     }
     fclose(f_output);
-
-    if(print_runtime){
-       clock_t end_time = clock();    // stop timer
-       double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;  
-       printf("Optimized conversion runtime: %.6f seconds\n", elapsed_time);
-    }
 
     return 0;
 }

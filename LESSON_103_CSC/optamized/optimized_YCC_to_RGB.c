@@ -1,6 +1,7 @@
 // optimized_YCC_to_RGB_neon.c
 #include <arm_neon.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "optimized_global.h"
 
 // vectorized upsample of one 2×2 chroma quad → 4‑lane vector
@@ -25,7 +26,7 @@ static void convert_2x2_YCC_block_neon(
     uint8_t G [IMAGE_ROW_SIZE][IMAGE_COL_SIZE],
     uint8_t B [IMAGE_ROW_SIZE][IMAGE_COL_SIZE]
 ) {
-    // load 4 Y values, subtract 16
+    // Load and subtract bias from Y
     int16_t y_arr[4] = {
         (int16_t)Y[row  ][col]   - 16,
         (int16_t)Y[row  ][col+1] - 16,
@@ -34,67 +35,72 @@ static void convert_2x2_YCC_block_neon(
     };
     int16x4_t yv = vld1_s16(y_arr);
 
-    // upsample Cb & Cr
+    // Upsample chroma
     int16x4_t cbv = upsample_neon_quad(
-        Cb_ds[row>>1][col>>1],
-        Cb_ds[row>>1][col>>1 + 1],
-        Cb_ds[row>>1 + 1][col>>1],
-        Cb_ds[row>>1 + 1][col>>1 + 1]
+       Cb_ds[(row >> 1)][(col >> 1)],
+       Cb_ds[(row >> 1)][(col >> 1) + 1],
+       Cb_ds[(row >> 1) + 1][(col >> 1)],
+       Cb_ds[(row >> 1) + 1][(col >> 1) + 1]
+
     );
     int16x4_t crv = upsample_neon_quad(
-        Cr_ds[row>>1][col>>1],
-        Cr_ds[row>>1][col>>1 + 1],
-        Cr_ds[row>>1 + 1][col>>1],
-        Cr_ds[row>>1 + 1][col>>1 + 1]
+        Cr_ds[(row>>1)][(col>>1)],
+        Cr_ds[(row>>1)][(col>>1) + 1],
+        Cr_ds[(row>>1) + 1][(col>>1)],
+        Cr_ds[(row>>1) + 1][(col>>1) + 1]
     );
 
-    // widen + bias chroma by –128
-    int32x4_t y32  = vmovl_s16(yv);
-    int32x4_t cb32 = vmovl_s16(vsub_s16(cbv, vdup_n_s16(128)));
-    int32x4_t cr32 = vmovl_s16(vsub_s16(crv, vdup_n_s16(128)));
+    // Bias chroma by -128
+    cbv = vsub_s16(cbv, vdup_n_s16(128));
+    crv = vsub_s16(crv, vdup_n_s16(128));
 
-    // R = (D1*y + D2*cr + (1<<(K-1))) >>K
-    int32x4_t r32 = vmlaq_n_s32(vmulq_n_s32(y32, D1), cr32, D2);
-    r32 = vaddq_s32(r32, vdupq_n_s32(1 << (K - 1)));
+    // Widen all to 32-bit
+    int32x4_t y32  = vmovl_s16(yv);
+    int32x4_t cb32 = vmovl_s16(cbv);
+    int32x4_t cr32 = vmovl_s16(crv);
+
+    // Round before shift
+    const int32x4_t round = vdupq_n_s32(1 << (K - 1));
+
+    // Red: R = (D1*y + D2*cr + 0.5) >> K
+    int32x4_t r32 = vmulq_n_s32(y32, D1);
+    r32 = vqaddq_s32(r32, vmulq_n_s32(cr32, D2));  // saturating 
+    r32 = vqaddq_s32(r32, round);
     r32 = vshrq_n_s32(r32, K);
 
-    // G = (D1*y - D3*cr - D4*cb + bias)>>K
+    // Green: G = (D1*y - D3*cr - D4*cb + 0.5) >> K
     int32x4_t g32 = vmulq_n_s32(y32, D1);
-    g32 = vmlsq_n_s32(g32, cr32, D3);
-    g32 = vmlsq_n_s32(g32, cb32, D4);
-    g32 = vaddq_s32(g32, vdupq_n_s32(1 << (K - 1)));
+    g32 = vqsubq_s32(g32, vmulq_n_s32(cr32, D3));  // saturating subtract
+    g32 = vqsubq_s32(g32, vmulq_n_s32(cb32, D4));
+    g32 = vqaddq_s32(g32, round);
     g32 = vshrq_n_s32(g32, K);
 
-    // B = (D1*y + D5*cb + bias)>>K
-    int32x4_t b32 = vmlaq_n_s32(vmulq_n_s32(y32, D1), cb32, D5);
-    b32 = vaddq_s32(b32, vdupq_n_s32(1 << (K - 1)));
+    // Blue: B = (D1*y + D5*cb + 0.5) >> K
+    int32x4_t b32 = vmulq_n_s32(y32, D1);
+    b32 = vqaddq_s32(b32, vmulq_n_s32(cb32, D5));
+    b32 = vqaddq_s32(b32, round);
     b32 = vshrq_n_s32(b32, K);
 
-    // clamp 0–255
-    r32 = vmaxq_s32(r32, vdupq_n_s32(0)); r32 = vminq_s32(r32, vdupq_n_s32(255));
-    g32 = vmaxq_s32(g32, vdupq_n_s32(0)); g32 = vminq_s32(g32, vdupq_n_s32(255));
-    b32 = vmaxq_s32(b32, vdupq_n_s32(0)); b32 = vminq_s32(b32, vdupq_n_s32(255));
+    uint16x4_t r_u16 = vqmovun_s32(r32); // saturates to 0–255
+    uint16x4_t g_u16 = vqmovun_s32(g32);
+    uint16x4_t b_u16 = vqmovun_s32(b32);
 
-    // narrow to 16 bits
-    int16x4_t r16 = vmovn_s32(r32);
-    int16x4_t g16 = vmovn_s32(g32);
-    int16x4_t b16 = vmovn_s32(b32);
+    // Store to output
+    R[row  ][col]   = vget_lane_u16(r_u16, 0); // red lane 0
+    R[row  ][col+1] = vget_lane_u16(r_u16, 1); // red lane 1
+    R[row+1][col]   = vget_lane_u16(r_u16, 2); // red lane 2
+    R[row+1][col+1] = vget_lane_u16(r_u16, 3); // red lane 3
 
-    // scatter back
-    R[row  ][col]   = vget_lane_s16(r16, 0);
-    R[row  ][col+1] = vget_lane_s16(r16, 1);
-    R[row+1][col]   = vget_lane_s16(r16, 2);
-    R[row+1][col+1] = vget_lane_s16(r16, 3);
+    G[row  ][col]   = vget_lane_u16(g_u16, 0);
+    G[row  ][col+1] = vget_lane_u16(g_u16, 1);
+    G[row+1][col]   = vget_lane_u16(g_u16, 2);
+    G[row+1][col+1] = vget_lane_u16(g_u16, 3);
 
-    G[row  ][col]   = vget_lane_s16(g16, 0);
-    G[row  ][col+1] = vget_lane_s16(g16, 1);
-    G[row+1][col]   = vget_lane_s16(g16, 2);
-    G[row+1][col+1] = vget_lane_s16(g16, 3);
+    B[row  ][col]   = vget_lane_u16(b_u16, 0);
+    B[row  ][col+1] = vget_lane_u16(b_u16, 1);
+    B[row+1][col]   = vget_lane_u16(b_u16, 2);
+    B[row+1][col+1] = vget_lane_u16(b_u16, 3);
 
-    B[row  ][col]   = vget_lane_s16(b16, 0);
-    B[row  ][col+1] = vget_lane_s16(b16, 1);
-    B[row+1][col]   = vget_lane_s16(b16, 2);
-    B[row+1][col+1] = vget_lane_s16(b16, 3);
 }
 
 void optimized_YCC_to_RGB(

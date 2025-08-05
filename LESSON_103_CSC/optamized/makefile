@@ -11,13 +11,14 @@ BIN = CSC.out
 all: $(BIN)
 
 $(BIN): $(SRC)
-	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -o CSC.out optimized_main.c optimized_RGB_to_YCC.c optimized_YCC_to_RGB.c
+	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -O3 -o CSC.out optimized_main.c optimized_RGB_to_YCC.c optimized_YCC_to_RGB.c
 
 # Generate assembly files
 asm:
-	$(CC) -S optimized_main.c -o optimized_main.s
-	$(CC) -S optimized_RGB_to_YCC.c -o optimized_RGB_to_YCC.s
-	$(CC) -S optimized_YCC_to_RGB.c -o optimized_YCC_to_RGB.s
+asm:
+	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -S optimized_main.c -o optimized_main.s
+	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -S optimized_RGB_to_YCC.c -o optimized_RGB_to_YCC.s
+	gcc -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 -S optimized_YCC_to_RGB.c -o optimized_YCC_to_RGB.s
 
 # Convert all .pgm files to .png (requires ImageMagick)
 convert:
